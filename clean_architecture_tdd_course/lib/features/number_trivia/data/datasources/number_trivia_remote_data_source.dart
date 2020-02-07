@@ -1,10 +1,9 @@
 import 'dart:convert';
 
 import 'package:clean_architecture_tdd_course/core/error/exceptions.dart';
-import 'package:clean_architecture_tdd_course/features/number_trivia/data/datasources/number_trivia_local_data_source.dart';
 import 'package:clean_architecture_tdd_course/features/number_trivia/data/models/number_trivia_model.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:meta/meta.dart';
+import 'package:http/http.dart' as http;
 
 abstract class NumberTriviaRemoteDataSource {
   /// Calls the http://numbersapi.com/{number} endpoint.
@@ -18,27 +17,28 @@ abstract class NumberTriviaRemoteDataSource {
   Future<NumberTriviaModel> getRandomNumberTrivia();
 }
 
-const CACHED_NUMBER_TRIVIA = 'CACHED_NUMBER_TRIVIA';
+class NumberTriviaRemoteDataSourceImpl implements NumberTriviaRemoteDataSource {
+  final http.Client client;
 
-class NumberTriviaLocalDataSourceImpl implements NumberTriviaLocalDataSource {
-  final SharedPreferences sharedPreferences;
-
-  NumberTriviaLocalDataSourceImpl({@required this.sharedPreferences});
+  NumberTriviaRemoteDataSourceImpl({@required this.client});
   @override
-  Future<NumberTriviaModel> getLastNumberTrivia() {
-    final jsonString = sharedPreferences.getString('CACHED_NUMBER_TRIVIA');
-    if (jsonString != null) {
-      return Future.value(NumberTriviaModel.fromJson(json.decode(jsonString)));
-    } else {
-      throw CacheException();
-    }
-  }
+  Future<NumberTriviaModel> getConcreteNumberTrivia(int number) =>
+      _getTriviaFromUrl('http://numbersapi.com/$number');
 
   @override
-  Future<void> cacheNumberTrivia(NumberTriviaModel triviaToCache) {
-    return sharedPreferences.setString(
-      CACHED_NUMBER_TRIVIA,
-      json.encode(triviaToCache.toJson()),
+  Future<NumberTriviaModel> getRandomNumberTrivia() =>
+      _getTriviaFromUrl('http://numbersapi.com/random');
+
+  Future<NumberTriviaModel> _getTriviaFromUrl(String url) async {
+    final response = await client.get(
+      url,
+      headers: {'Content-Type': 'application/json'},
     );
+
+    if (response.statusCode == 200) {
+      return NumberTriviaModel.fromJson(json.decode(response.body));
+    } else {
+      throw ServerException();
+    }
   }
 }
