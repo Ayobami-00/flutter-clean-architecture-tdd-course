@@ -50,27 +50,28 @@ Stream<NumberTriviaState> mapEventToState(
         final failureOrTrivia = await getConcreteNumberTrivia(
           Params(number: integer),
         );
-        yield failureOrTrivia.fold(
-          (failure) => Error(message: _mapFailureToMessage(failure)),
-          (trivia) => Loaded(trivia: trivia),
-        );
+        yield* _eitherLoadedOrErrorState(failureOrTrivia);
       },
     );
-  else if (event is GetTriviaForRandomNumber) {
+  } else if (event is GetTriviaForRandomNumber) {
     yield Loading();
     final failureOrTrivia = await getRandomNumberTrivia(
       NoParams(),
     );
-    yield failureOrTrivia.fold(
-      (failure) => Error(message: _mapFailureToMessage(failure)),
-      (trivia) => Loaded(trivia: trivia),
-    );
+    yield* _eitherLoadedOrErrorState(failureOrTrivia);
   }
 }
+
+Stream<NumberTriviaState> _eitherLoadedOrErrorState(
+  Either<Failure, NumberTrivia> either,
+) async* {
+  yield either.fold(
+    (failure) => Error(message: _mapFailureToMessage(failure)),
+    (trivia) => Loaded(trivia: trivia),
+  );
 }
 
 String _mapFailureToMessage(Failure failure) {
-  // Instead of a regular 'if (failure is ServerFailure)...'
   switch (failure.runtimeType) {
     case ServerFailure:
       return SERVER_FAILURE_MESSAGE;
