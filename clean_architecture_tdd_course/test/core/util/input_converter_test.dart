@@ -23,7 +23,7 @@ void main() {
     );
 
     test(
-      'should return a failure when the string is not an integer',
+      'should return a Failure when the string is not an integer',
       () async {
         // arrange
         final str = 'abc';
@@ -35,7 +35,7 @@ void main() {
     );
 
     test(
-      'should return a failure when the string is a negative integer',
+      'should return a Failure when the string is a negative integer',
       () async {
         // arrange
         final str = '-123';
